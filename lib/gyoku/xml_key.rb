@@ -2,17 +2,6 @@ module Gyoku
   module XMLKey
     class << self
 
-      CAMELCASE       = lambda { |key| key.gsub(/\/(.?)/) { "::#{$1.upcase}" }.gsub(/(?:^|_)(.)/) { $1.upcase } }
-      LOWER_CAMELCASE = lambda { |key| key[0].chr.downcase + CAMELCASE.call(key)[1..-1] }
-      UPCASE          = lambda { |key| key.upcase }
-
-      FORMULAS = {
-        :lower_camelcase => lambda { |key| LOWER_CAMELCASE.call(key) },
-        :camelcase       => lambda { |key| CAMELCASE.call(key) },
-        :upcase          => lambda { |key| UPCASE.call(key) },
-        :none            => lambda { |key| key }
-      }
-
       # Converts a given +object+ with +options+ to an XML key.
       def create(key, options = {})
         xml_key = chop_special_characters key.to_s
@@ -32,10 +21,27 @@ module Gyoku
 
     private
 
+      def camel_case(string)
+        string.gsub(/\/(.?)/) { "::#{$1.upcase}" }.gsub(/(?:^|_)(.)/) { $1.upcase }
+      end
+
+      def lower_camel_case(string)
+        string[0].chr.downcase + camel_case(string)[1..-1]
+      end
+
+      def formulas
+        {
+          :lower_camelcase => lambda { |key| lower_camel_case(key) },
+          :camelcase       => lambda { |key| camel_case(key) },
+          :upcase          => lambda { |key| key.upcase },
+          :none            => lambda { |key| key }
+        }
+      end
+
       # Returns the formula for converting Symbol keys.
       def key_converter(options)
         key_converter = options[:key_converter] || :lower_camelcase
-        FORMULAS[key_converter]
+        formulas[key_converter]
       end
 
       # Chops special characters from the end of a given +string+.
